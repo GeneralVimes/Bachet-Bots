@@ -1,0 +1,218 @@
+<html>
+<head>
+</head>   
+<body>
+    <script>
+        //Узагальнена гра Баше
+        //Є купа з N камінців. 
+        //Гравці по черзі беруть звідти якусь кількість камінців. 
+        //Ця кількість має знаходитися у межах, що визначаються на старті гри 
+        //(у прикладі, що ми розбирали у класі, можна було брати від 1 до 3 каменів)
+        //Виграє той гравець, хто зміг зробити останній хід
+        //Гравців може бути більше ніж 2
+
+        //Ваша задача:
+        //написати свого бота, унаслідувавши його від Bot.
+        //випробуйте бота, запустивши в консолі команду 
+        //world.startTournament([MyBot,RandomBot],1000) - щоб запустити турнір на 2 гравців проти RandomBot
+        //world.startTournament([MyBot,RandomBot,RandomBot],1000) - щоб запустити турнір на 3 гравців проти двох RandomBot
+        //також перед стартом турніру можна задати, яку мінімальну та максимальну кількість камінчцв можна брати, функцією 
+        //world.setRules(3,7)
+        //такий виклик дозволить гравцям брати від 3 до 7 камінців включно
+
+        //Спробуйте написати такого бота, який би вигравав в RandomBot'ів у якомога більшій кількості змагань: з різною кількістю гравців, та з різними правилами взяття камінців
+
+        class Bot {
+            constructor(){
+                this.name="Bot"
+                
+                this.minNum2Take = 1;
+                this.maxNum2Take = 3;
+            }
+            makeStep(num){
+                return 0
+            }
+            //на старті партії бот зізнається правила гри: кількість гравців, мінімальне та максимальне можливі кількості каміння, що можна брати з купи 
+            getInformedOfGameStarted(numPlayers, minNum, maxNum){
+                this.minNum2Take=minNum;
+                this.maxNum2Take=maxNum;
+            }
+            //на прикінці партії бот дізнається, чи виграв він (це заготовка для системи самонавчання ботів)
+            getInformedOfGameResult(hasWon){
+
+            }
+        }
+
+        //RandomBot просто бере випадкову кількість каміння
+        class RandomBot extends Bot{
+            constructor(){
+                super()
+            }
+            makeStep(num){
+                return Math.floor(this.minNum2Take+Math.random()*(this.maxNum2Take-this.minNum2Take+1))
+            }                         
+        }
+
+        //Bot567 заточений на гру, де можна брати від 1 до 3 камінців, 
+        //і він вміє залишати супротивнику 4 камінця після свого ходу з 5, 6 чи 7
+        class Bot567 extends Bot{
+            constructor(){
+                super()
+            }
+            makeStep(num){
+                let res = Math.floor(1+Math.random()*3)
+                if (num==5) res=1;
+                if (num==6) res=2;
+                if (num==7) res=3;
+                return res;
+            }                         
+        }
+
+        //BotSmart заточений на гру, де можна брати від 1 до 3 камінців, 
+        //і він вміє забирати всі камінці, якщо їх 3, 2 чи 1, а також вміє залищати супротивнику 4 камінці, якщо на його ході їх 5, 6 чи 7
+        class BotSmart extends Bot{
+            constructor(){
+                super()
+            }
+            makeStep(num){
+                let res = Math.floor(1+Math.random()*3)
+                if (num==5) res=1;
+                if (num==6) res=2;
+                if (num==7) res=3;
+                if (num<=3) res = num;
+                return res;
+            }    
+        }
+        //BotSmartSmart заточений на гру, де можна брати від 1 до 3 камінців, 
+        //і застосовує накращу стратегію для 2 гравців - завжди залишає супротивнику число камінців, що ділиться на 4
+        class BotSmartSmart extends Bot{
+            makeStep(num){
+                let res = num%4
+                if (res==0) {
+                    res = Math.floor(1+Math.random()*3)
+                }
+                return res;
+            }            
+        }
+
+        //клас World організовує партії та чемпіонати між ботами
+        class World {
+            constructor(){
+                this.bots=[];//список ботів, які змагаються
+                this.num=15;//поточна кількість каменів
+                this.minNum2Take = 1;//мінімальна кількість каменів, що може взяти гравець за свій хід
+                this.maxNum2Take = 3;//максимальная кількість каменів, що може взяти гравець за свій хід
+            }
+
+            createBot(botClass){
+                let bot = new botClass();
+                this.bots.push(bot)
+                bot.name = "B"+this.bots.length+"_"+botClass.name;
+            }
+
+            setRules(minNum, maxNum){
+                this.minNum2Take=minNum;
+                this.maxNum2Take=maxNum;
+            }
+
+            //турнір - які боти бубуть між собою змагатися? //скільки буде партій у турнірі
+            startTournament(botsClassesAr, numGames){
+                console.log("Tournament rules:", "min= ",this.minNum2Take, " max= ", this.maxNum2Take)
+
+                this.bots.length = 0;//очищаємо список ботів для гри
+                //створюємо ботів потрібних класів
+                for (let i=0; i<botsClassesAr.length; i++){
+                    this.createBot(botsClassesAr[i])
+                }
+                //фіксуємо кількості перемог в ботів (спочатку по 0)
+                let numVictories={};
+                for (let i=0; i<this.bots.length; i++){
+                    numVictories[this.bots[i].name]=0;
+                }
+
+                for (let i=0; i<numGames; i++){//проводимо кожну гру
+                    //починаэмо з випадкового числа в діапазоні
+                    let n = 20+Math.floor(Math.random()*100);
+
+                    //перед кожною грою перемішаємо список ботів
+                    this.shuffleBots()
+                    //дізнаємося переможця гри
+                    let winner = this.startNewGame(n, true);
+                    numVictories[winner.name] += 1;
+                }
+
+                console.log("Tournament results:")
+                console.log(numVictories)                
+            }
+
+            //перемішуємо ботів
+            shuffleBots(){
+                for (let i=0; i<this.bots.length; i++){//пробігаємося по списку ботів та міняємо мсцями з випадковим
+                    let j = Math.floor(Math.random()*this.bots.length);
+                    let t = this.bots[i];
+                    this.bots[i] = this.bots[j];
+                    this.bots[j] = t;
+                }
+            }
+
+            //запускаємо гру, починаючи з числа n (та вказуємо, чи логувати детально хід гри)
+            startNewGame(n,skipLogs){
+                let winnerBot = null;
+                //інформуємо ботів про старт гри (щоб вони знали, скільки гравців, яку мінімальну та максимальну кількості каменів можна брати)
+                for (let i=0; i<this.bots.length; i++){
+                    this.bots[i].getInformedOfGameStarted(this.bots.length, this.minNum2Take, this.maxNum2Take);
+                }
+
+                this.num = n;
+                let currentBotId = 0;
+                if(!skipLogs)
+                    console.log("Game starts, num=",this.num);
+                while (this.num>0){
+                    let bot = this.bots[currentBotId];//дізнаємося, який бот зараз ходить
+                    let botStep = bot.makeStep(this.num);//даємо йому інформацію про поточні камені
+                    let botStepValid = this.validateStep(botStep);//валідуємо цю інформацію (щоб бот не читерів)
+                    this.num-=botStepValid;//віднімаємо хід бота від каменів
+                    if(!skipLogs)
+                        console.log("Bot ", currentBotId,"(", bot.name,")", " takes ", botStepValid, ", stones left: ", this.num);//інформуємо, який бот скільки взяв каменів
+
+                    if (this.num<this.minNum2Take){//коли каменів залишається менша, ніж  мінімальна можлива кількість для ходу, гра зупиняється
+                        if(!skipLogs)
+                            console.log("WINNER BOT:",currentBotId, "(", bot.name,")");
+
+                        winnerBot = this.bots[currentBotId];
+                        break;
+                    }
+                    currentBotId++;
+                    currentBotId%=this.bots.length;
+                }
+
+                for (let i=0; i<this.bots.length; i++){
+                    this.bots[i].getInformedOfGameResult(this.bots[i]==winnerBot);
+                }
+
+                return winnerBot;
+            }
+            //отримавши хід від бота виправляємо можливі помилкові дані
+            validateStep(step){
+                step = Math.round(step);
+                if (isNaN(step)){
+                    step=0;
+                }
+                if (step<this.minNum2Take){
+                    step=this.minNum2Take;
+                }
+                if (step>this.maxNum2Take){
+                    step=this.maxNum2Take;
+                }
+                if (step>this.num){
+                    step=this.num;
+                }
+                return step;
+            }
+        }
+
+        var world = new World();
+        
+    </script>
+</body>  
+</html>  
